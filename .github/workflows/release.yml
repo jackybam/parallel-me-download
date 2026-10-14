@@ -1,0 +1,26 @@
+name: release-apk
+# apk 브랜치에 앱 조각(parallel_me.apk.part*)과 VERSION 을 올리면 → 합쳐서 릴리스로 올려요.
+# 다운로드 주소(항상 최신): https://github.com/jackybam/parallel-me-download/releases/latest/download/parallel_me.apk
+on:
+  push:
+    branches: [apk]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: apk
+      - name: 조각 합치기
+        run: |
+          cat parallel_me.apk.part* > parallel_me.apk
+          sha256sum parallel_me.apk
+          echo "V=$(cut -d'|' -f1 VERSION)" >> $GITHUB_ENV
+      - name: 릴리스 올리기
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v$V" parallel_me.apk --repo "$GITHUB_REPOSITORY" --title "평행세계 나 v$V" --notes "안드로이드 앱 v$V" --latest || \
+          gh release upload "v$V" parallel_me.apk --repo "$GITHUB_REPOSITORY" --clobber
